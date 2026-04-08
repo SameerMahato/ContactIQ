@@ -1,0 +1,11 @@
+name,company,role,email,notes,Industry,Location
+John Doe,Acme Corp,CTO,john@acme.com,Interested in AI infrastructure,AI Infrastructure,San Francisco
+Sarah Chen,Stripe,VP Engineering,sarah@stripe.com,Payment systems expert,Fintech,Seattle
+Mike Johnson,OpenAI,Research Scientist,mike@openai.com,Working on GPT models,AI Research,San Francisco
+Emily Davis,Google,Product Manager,emily@google.com,Cloud products,Cloud Computing,Mountain View
+Robert Wilson,Microsoft,Senior Engineer,robert@microsoft.com,Azure specialist,Cloud Computing,Redmond
+Lisa Anderson,Meta,Engineering Manager,lisa@meta.com,Infrastructure team,Social Media,Menlo Park
+David Brown,Amazon,Solutions Architect,david@amazon.com,AWS expert,E-commerce,Seattle
+Jennifer Lee,Tesla,Software Engineer,jennifer@tesla.com,Autopilot team,Automotive,Palo Alto
+James Taylor,Netflix,Data Scientist,james@netflix.com,Recommendation systems,Entertainment,Los Gatos
+Maria Garcia,Uber,Backend Engineer,maria@uber.com,Payments platform,Transportation,San Francisco
