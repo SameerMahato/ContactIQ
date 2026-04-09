@@ -81,16 +81,61 @@ router.post('/import', upload.single('file'), async (req, res) => {
   fs.createReadStream(filePath)
     .pipe(csv())
     .on('data', (data) => {
-      const { name, company, role, email, notes, ...attributes } = data;
+      // Handle both old format (name, company, role, email) and new format (first_name, last_name, company_name, designation, mobile, email)
+      let name, company, role, email, notes;
+      const attributes = {};
+      
+      // Check if it's the new format (chat_states CSV)
+      if (data.first_name || data.last_name) {
+        // New format: first_name, last_name, company_name, designation, mobile, email
+        const firstName = data.first_name?.trim() || '';
+        const middleName = data.middle_name?.trim() || '';
+        const lastName = data.last_name?.trim() || '';
+        name = [firstName, middleName, lastName].filter(n => n).join(' ');
+        
+        company = data.company_name?.trim() || '';
+        role = data.designation?.trim() || '';
+        email = data.email?.trim() || '';
+        
+        // Add additional fields as attributes
+        if (data.mobile) attributes.mobile = data.mobile.trim();
+        if (data.pan) attributes.pan = data.pan.trim();
+        if (data.gender) attributes.gender = data.gender.trim();
+        if (data.dob) attributes.dob = data.dob.trim();
+        if (data.state) attributes.state = data.state.trim();
+        if (data.city) attributes.city = data.city.trim();
+        if (data.pincode) attributes.pincode = data.pincode.trim();
+        if (data.application_status) attributes.application_status = data.application_status.trim();
+        if (data.state_id) attributes.state_id = data.state_id.trim();
+        if (data.kyc_successful) attributes.kyc_successful = data.kyc_successful.trim();
+        if (data.income_verified_aa) attributes.income_verified_aa = data.income_verified_aa.trim();
+        if (data.latitude) attributes.latitude = data.latitude.trim();
+        if (data.longitude) attributes.longitude = data.longitude.trim();
+      } else {
+        // Old format: name, company, role, email, notes
+        name = data.name?.trim() || '';
+        company = data.company?.trim() || '';
+        role = data.role?.trim() || '';
+        email = data.email?.trim() || '';
+        notes = data.notes?.trim() || '';
+        
+        // Add any extra columns as attributes
+        Object.keys(data).forEach(key => {
+          if (!['name', 'company', 'role', 'email', 'notes'].includes(key) && data[key]) {
+            attributes[key] = data[key].trim();
+          }
+        });
+      }
+      
       if (name) { // Only add if name exists
         // Convert attributes object to Map for MongoDB
         const attributesMap = new Map(Object.entries(attributes));
         results.push({ 
-          name: name.trim(), 
-          company: company?.trim(), 
-          role: role?.trim(), 
-          email: email?.trim(), 
-          notes: notes?.trim(), 
+          name, 
+          company, 
+          role, 
+          email, 
+          notes: notes || '', 
           attributes: attributesMap 
         });
         importStatus.total++;

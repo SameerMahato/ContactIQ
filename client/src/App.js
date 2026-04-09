@@ -18,7 +18,7 @@ function App() {
 
   const loadContacts = async () => {
     try {
-      const res = await axios.get('/api/contacts?limit=100');
+      const res = await axios.get('http://localhost:5000/api/contacts?limit=100');
       setContacts(res.data.contacts);
     } catch (error) {
       console.error('Error loading contacts:', error);
@@ -28,8 +28,8 @@ function App() {
   const loadAnalytics = async () => {
     try {
       const [segmentsRes, campaignsRes] = await Promise.all([
-        axios.get('/api/analytics/segments'),
-        axios.get('/api/analytics/campaigns')
+        axios.get('http://localhost:5000/api/analytics/segments'),
+        axios.get('http://localhost:5000/api/analytics/campaigns')
       ]);
       setAnalytics({
         segments: segmentsRes.data,
@@ -51,7 +51,7 @@ function App() {
     formData.append('file', file);
 
     try {
-      const res = await axios.post('/api/contacts/import', formData);
+      const res = await axios.post('http://localhost:5000/api/contacts/import', formData);
       alert(res.data.message + '\n\nContacts will appear shortly. The page will refresh automatically.');
       
       // Auto-refresh contacts after a short delay
@@ -75,7 +75,7 @@ function App() {
     setLoading(true);
 
     try {
-      const res = await axios.post('/api/chat/message', {
+      const res = await axios.post('http://localhost:5000/api/chat/message', {
         message: input,
         history: messages
       });
@@ -104,7 +104,7 @@ function App() {
     const email = prompt('Email:');
 
     try {
-      await axios.post('/api/contacts', { name, company, role, email });
+      await axios.post('http://localhost:5000/api/contacts', { name, company, role, email });
       loadContacts();
     } catch (error) {
       alert('Error creating contact: ' + error.message);

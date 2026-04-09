@@ -5,61 +5,77 @@ const Contact = require('../models/Contact');
 // Get comprehensive analytics and segmentation
 router.get('/segments', async (req, res) => {
   try {
-    const contacts = await Contact.find({});
+    // Get total count
+    const totalContacts = await Contact.countDocuments({});
     
-    // Industry segmentation
-    const industryMap = new Map();
-    const locationMap = new Map();
-    const roleMap = new Map();
-    const companyMap = new Map();
-    
-    contacts.forEach(contact => {
-      // Industry analysis
-      const industry = contact.attributes?.get('Industry') || 'Unknown';
-      industryMap.set(industry, (industryMap.get(industry) || 0) + 1);
+    // Use aggregation for efficient grouping
+    const [stateGroups, cityGroups, roleGroups, companyGroups] = await Promise.all([
+      // Group by state (from attributes.state)
+      Contact.aggregate([
+        { $group: { _id: '$attributes.state', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 20 }
+      ]),
       
-      // Location analysis
-      const location = contact.attributes?.get('Location') || 'Unknown';
-      locationMap.set(location, (locationMap.get(location) || 0) + 1);
+      // Group by city (from attributes.city)
+      Contact.aggregate([
+        { $group: { _id: '$attributes.city', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 20 }
+      ]),
       
-      // Role analysis
-      const role = contact.role || 'Unknown';
-      roleMap.set(role, (roleMap.get(role) || 0) + 1);
+      // Group by role
+      Contact.aggregate([
+        { $group: { _id: '$role', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 20 }
+      ]),
       
-      // Company analysis
-      const company = contact.company || 'Unknown';
-      companyMap.set(company, (companyMap.get(company) || 0) + 1);
-    });
+      // Group by company
+      Contact.aggregate([
+        { $group: { _id: '$company', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 10 }
+      ])
+    ]);
     
-    // Convert to sorted arrays
-    const industries = Array.from(industryMap.entries())
-      .map(([name, count]) => ({ name, count, percentage: ((count / contacts.length) * 100).toFixed(1) }))
-      .sort((a, b) => b.count - a.count);
+    // Format results
+    const states = stateGroups.map(g => ({
+      name: g._id || 'Unknown',
+      count: g.count,
+      percentage: ((g.count / totalContacts) * 100).toFixed(1)
+    }));
     
-    const locations = Array.from(locationMap.entries())
-      .map(([name, count]) => ({ name, count, percentage: ((count / contacts.length) * 100).toFixed(1) }))
-      .sort((a, b) => b.count - a.count);
+    const cities = cityGroups.map(g => ({
+      name: g._id || 'Unknown',
+      count: g.count,
+      percentage: ((g.count / totalContacts) * 100).toFixed(1)
+    }));
     
-    const roles = Array.from(roleMap.entries())
-      .map(([name, count]) => ({ name, count, percentage: ((count / contacts.length) * 100).toFixed(1) }))
-      .sort((a, b) => b.count - a.count);
+    const roles = roleGroups.map(g => ({
+      name: g._id || 'Unknown',
+      count: g.count,
+      percentage: ((g.count / totalContacts) * 100).toFixed(1)
+    }));
     
-    const companies = Array.from(companyMap.entries())
-      .map(([name, count]) => ({ name, count, percentage: ((count / contacts.length) * 100).toFixed(1) }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10); // Top 10 companies
+    const companies = companyGroups.map(g => ({
+      name: g._id || 'Unknown',
+      count: g.count,
+      percentage: ((g.count / totalContacts) * 100).toFixed(1)
+    }));
     
     res.json({
-      totalContacts: contacts.length,
+      totalContacts,
       segments: {
-        byIndustry: industries,
-        byLocation: locations,
+        byIndustry: states, // Using state as industry proxy
+        byLocation: cities,
         byRole: roles,
         byCompany: companies
       },
-      insights: generateInsights(industries, locations, roles, companies, contacts.length)
+      insights: generateInsights(states, cities, roles, companies, totalContacts)
     });
   } catch (error) {
+    console.error('Analytics error:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -67,67 +83,73 @@ router.get('/segments', async (req, res) => {
 // Generate campaign recommendations
 router.get('/campaigns', async (req, res) => {
   try {
-    const contacts = await Contact.find({});
-    
     const campaigns = [];
     
-    // Group contacts by industry
-    const industryGroups = new Map();
-    contacts.forEach(contact => {
-      const industry = contact.attributes?.get('Industry') || 'Unknown';
-      if (!industryGroups.has(industry)) {
-        industryGroups.set(industry, []);
-      }
-      industryGroups.get(industry).push(contact);
-    });
+    // Get top states for state-based campaigns
+    const stateGroups = await Contact.aggregate([
+      { $match: { 'attributes.state': { $exists: true, $ne: '' } } },
+      { $group: { _id: '$attributes.state', count: { $sum: 1 } } },
+      { $match: { count: { $gte: 1000 } } },
+      { $sort: { count: -1 } },
+      { $limit: 5 }
+    ]);
     
-    // Generate industry-specific campaigns
-    industryGroups.forEach((contactList, industry) => {
-      if (industry !== 'Unknown' && contactList.length >= 3) {
-        campaigns.push({
-          name: `${industry} Outreach Campaign`,
-          segment: industry,
-          targetCount: contactList.length,
-          strategy: getCampaignStrategy(industry),
-          contacts: contactList.slice(0, 5).map(c => ({ name: c.name, company: c.company, role: c.role }))
-        });
-      }
-    });
-    
-    // Location-based campaigns
-    const locationGroups = new Map();
-    contacts.forEach(contact => {
-      const location = contact.attributes?.get('Location') || 'Unknown';
-      if (!locationGroups.has(location)) {
-        locationGroups.set(location, []);
-      }
-      locationGroups.get(location).push(contact);
-    });
-    
-    locationGroups.forEach((contactList, location) => {
-      if (location !== 'Unknown' && contactList.length >= 5) {
-        campaigns.push({
-          name: `${location} Regional Event`,
-          segment: location,
-          targetCount: contactList.length,
-          strategy: `Host an in-person networking event or workshop in ${location} to engage local contacts`,
-          contacts: contactList.slice(0, 5).map(c => ({ name: c.name, company: c.company, role: c.role }))
-        });
-      }
-    });
-    
-    // Role-based campaigns
-    const seniorRoles = contacts.filter(c => 
-      c.role && (c.role.includes('VP') || c.role.includes('CTO') || c.role.includes('Director') || c.role.includes('Manager'))
-    );
-    
-    if (seniorRoles.length >= 3) {
+    for (const group of stateGroups) {
+      const sampleContacts = await Contact.find({ 'attributes.state': group._id })
+        .limit(5)
+        .select('name company role');
+      
       campaigns.push({
-        name: 'Executive Leadership Campaign',
-        segment: 'Senior Leadership',
-        targetCount: seniorRoles.length,
-        strategy: 'Personalized outreach focusing on strategic partnerships, thought leadership content, and executive briefings',
-        contacts: seniorRoles.slice(0, 5).map(c => ({ name: c.name, company: c.company, role: c.role }))
+        name: `${group._id} State Campaign`,
+        segment: group._id,
+        targetCount: group.count,
+        strategy: `Targeted outreach to ${group.count.toLocaleString()} contacts in ${group._id}. Focus on regional events and local partnerships.`,
+        contacts: sampleContacts.map(c => ({ name: c.name, company: c.company || 'N/A', role: c.role || 'N/A' }))
+      });
+    }
+    
+    // Get top cities for city-based campaigns
+    const cityGroups = await Contact.aggregate([
+      { $match: { 'attributes.city': { $exists: true, $ne: '' } } },
+      { $group: { _id: '$attributes.city', count: { $sum: 1 } } },
+      { $match: { count: { $gte: 500 } } },
+      { $sort: { count: -1 } },
+      { $limit: 5 }
+    ]);
+    
+    for (const group of cityGroups) {
+      const sampleContacts = await Contact.find({ 'attributes.city': group._id })
+        .limit(5)
+        .select('name company role');
+      
+      campaigns.push({
+        name: `${group._id} City Event`,
+        segment: group._id,
+        targetCount: group.count,
+        strategy: `Host networking event in ${group._id} for ${group.count.toLocaleString()} local contacts.`,
+        contacts: sampleContacts.map(c => ({ name: c.name, company: c.company || 'N/A', role: c.role || 'N/A' }))
+      });
+    }
+    
+    // Application status campaigns
+    const statusGroups = await Contact.aggregate([
+      { $match: { 'attributes.application_status': { $exists: true, $ne: '' } } },
+      { $group: { _id: '$attributes.application_status', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 3 }
+    ]);
+    
+    for (const group of statusGroups) {
+      const sampleContacts = await Contact.find({ 'attributes.application_status': group._id })
+        .limit(5)
+        .select('name company role');
+      
+      campaigns.push({
+        name: `${group._id} Follow-up Campaign`,
+        segment: group._id,
+        targetCount: group.count,
+        strategy: `Follow up with ${group.count.toLocaleString()} contacts in ${group._id} status. Personalized messaging based on application stage.`,
+        contacts: sampleContacts.map(c => ({ name: c.name, company: c.company || 'N/A', role: c.role || 'N/A' }))
       });
     }
     
@@ -136,6 +158,7 @@ router.get('/campaigns', async (req, res) => {
       campaigns: campaigns
     });
   } catch (error) {
+    console.error('Campaign error:', error);
     res.status(500).json({ error: error.message });
   }
 });
