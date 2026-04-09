@@ -2,7 +2,7 @@
 
 A fullstack contacts workspace that integrates with LibreChat's AI assistant, enabling natural language queries about stored contacts.
 
-![Application Demo](docs/screenshots/demo.png)
+
 
 *AI-powered contact search showing results for "Ekaja" query*
 
@@ -14,6 +14,8 @@ A fullstack contacts workspace that integrates with LibreChat's AI assistant, en
 - ✅ AI-powered chat integration with contact context
 - ✅ Intelligent contact retrieval (only relevant contacts sent to AI)
 - ✅ Clean, minimal UI with sidebar navigation
+- ✅ Advanced analytics and demographic segmentation
+- ✅ Campaign recommendations based on contact patterns
 
 ## Architecture
 
@@ -147,6 +149,20 @@ Type natural language queries in the chat:
 
 The AI will search your contacts and provide relevant answers.
 
+### Analytics & Campaign Insights
+Click the "📊 Analytics" button to view:
+- Demographic segmentation by industry, location, and role
+- Contact distribution patterns
+- Key insights about your network
+- Recommended targeted campaigns with strategies
+- Sample contacts for each campaign segment
+
+The analytics engine automatically identifies:
+- Industry concentrations
+- Geographic clusters
+- Seniority distribution
+- Campaign opportunities based on segments
+
 ## Design Questions
 
 ### 1. If the system needed to support 1,000,000 contacts, how would you redesign it?
@@ -267,6 +283,10 @@ The AI will search your contacts and provide relevant answers.
 
 ### Chat
 - `POST /api/chat/message` - Send message to AI
+
+### Analytics
+- `GET /api/analytics/segments` - Get demographic segmentation analysis
+- `GET /api/analytics/campaigns` - Get campaign recommendations
 
 ## Project Structure
 

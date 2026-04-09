@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const contactRoutes = require('./routes/contacts');
 const chatRoutes = require('./routes/chat');
+const analyticsRoutes = require('./routes/analytics');
 
 const app = express();
 
@@ -16,6 +17,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/librechat
 
 app.use('/api/contacts', contactRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

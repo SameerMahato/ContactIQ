@@ -9,6 +9,8 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [analytics, setAnalytics] = useState(null);
 
   useEffect(() => {
     loadContacts();
@@ -20,6 +22,23 @@ function App() {
       setContacts(res.data.contacts);
     } catch (error) {
       console.error('Error loading contacts:', error);
+    }
+  };
+
+  const loadAnalytics = async () => {
+    try {
+      const [segmentsRes, campaignsRes] = await Promise.all([
+        axios.get('/api/analytics/segments'),
+        axios.get('/api/analytics/campaigns')
+      ]);
+      setAnalytics({
+        segments: segmentsRes.data,
+        campaigns: campaignsRes.data
+      });
+      setShowAnalytics(true);
+    } catch (error) {
+      console.error('Error loading analytics:', error);
+      alert('Failed to load analytics');
     }
   };
 
@@ -107,6 +126,9 @@ function App() {
             <button className="btn btn-primary" onClick={createContact}>
               + New Contact
             </button>
+            <button className="btn btn-secondary" onClick={loadAnalytics}>
+              📊 Analytics
+            </button>
             <label className="btn btn-secondary">
               Import CSV
               <input
@@ -144,7 +166,116 @@ function App() {
       </div>
 
       <div className="main-content">
-        <div className="chat-container">
+        {showAnalytics && analytics ? (
+          <div className="analytics-container">
+            <div className="analytics-header">
+              <h2>Contact Analytics & Campaign Insights</h2>
+              <button className="btn btn-secondary" onClick={() => setShowAnalytics(false)}>
+                ← Back to Chat
+              </button>
+            </div>
+
+            <div className="analytics-summary">
+              <div className="stat-card">
+                <h3>{analytics.segments.totalContacts}</h3>
+                <p>Total Contacts</p>
+              </div>
+              <div className="stat-card">
+                <h3>{analytics.segments.segments.byIndustry.length}</h3>
+                <p>Industries</p>
+              </div>
+              <div className="stat-card">
+                <h3>{analytics.segments.segments.byLocation.length}</h3>
+                <p>Locations</p>
+              </div>
+              <div className="stat-card">
+                <h3>{analytics.campaigns.totalCampaigns}</h3>
+                <p>Campaign Opportunities</p>
+              </div>
+            </div>
+
+            <div className="analytics-section">
+              <h3>📊 Demographic Segments</h3>
+              
+              <div className="segment-group">
+                <h4>By Industry</h4>
+                <div className="segment-list">
+                  {analytics.segments.segments.byIndustry.map((item, idx) => (
+                    <div key={idx} className="segment-item">
+                      <span className="segment-name">{item.name}</span>
+                      <span className="segment-bar" style={{width: `${item.percentage}%`}}></span>
+                      <span className="segment-count">{item.count} ({item.percentage}%)</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="segment-group">
+                <h4>By Location</h4>
+                <div className="segment-list">
+                  {analytics.segments.segments.byLocation.map((item, idx) => (
+                    <div key={idx} className="segment-item">
+                      <span className="segment-name">{item.name}</span>
+                      <span className="segment-bar" style={{width: `${item.percentage}%`}}></span>
+                      <span className="segment-count">{item.count} ({item.percentage}%)</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="segment-group">
+                <h4>By Role</h4>
+                <div className="segment-list">
+                  {analytics.segments.segments.byRole.slice(0, 10).map((item, idx) => (
+                    <div key={idx} className="segment-item">
+                      <span className="segment-name">{item.name}</span>
+                      <span className="segment-bar" style={{width: `${item.percentage}%`}}></span>
+                      <span className="segment-count">{item.count} ({item.percentage}%)</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="analytics-section">
+              <h3>💡 Key Insights</h3>
+              <div className="insights-list">
+                {analytics.segments.insights.map((insight, idx) => (
+                  <div key={idx} className="insight-card">
+                    <h4>{insight.type}</h4>
+                    <p className="insight-finding">{insight.finding}</p>
+                    <p className="insight-recommendation">💡 {insight.recommendation}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="analytics-section">
+              <h3>🎯 Recommended Campaigns</h3>
+              <div className="campaigns-list">
+                {analytics.campaigns.campaigns.map((campaign, idx) => (
+                  <div key={idx} className="campaign-card">
+                    <h4>{campaign.name}</h4>
+                    <div className="campaign-meta">
+                      <span className="campaign-segment">Segment: {campaign.segment}</span>
+                      <span className="campaign-target">Target: {campaign.targetCount} contacts</span>
+                    </div>
+                    <p className="campaign-strategy">{campaign.strategy}</p>
+                    <div className="campaign-contacts">
+                      <strong>Sample contacts:</strong>
+                      <ul>
+                        {campaign.contacts.map((contact, cidx) => (
+                          <li key={cidx}>{contact.name} - {contact.role} at {contact.company}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="chat-container">
           {selectedContact && (
             <div className="contact-detail">
               <h3>{selectedContact.name}</h3>
@@ -213,6 +344,7 @@ function App() {
             </button>
           </div>
         </div>
+        )}
       </div>
     </div>
   );
