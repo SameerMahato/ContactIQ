@@ -2,6 +2,10 @@
 
 A fullstack contacts workspace that integrates with LibreChat's AI assistant, enabling natural language queries about stored contacts.
 
+![Application Demo](docs/screenshots/demo.png)
+
+*AI-powered contact search showing results for "Ekaja" query*
+
 ## Features
 
 - ✅ Contact management (create, view, list)
