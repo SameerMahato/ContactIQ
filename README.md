@@ -1,10 +1,10 @@
-# LibreChat Contacts Integration
+# ContactIQ - AI-Powered Contact Management & Analytics
 
-A fullstack contacts workspace that integrates with LibreChat's AI assistant, enabling natural language queries about stored contacts.
+A fullstack contact management system with AI-powered search and advanced analytics for demographic segmentation and targeted campaign planning.
 
+![Application Demo](docs/screenshots/demo.png)
 
-
-*AI-powered contact search showing results for "Ekaja" query*
+*AI-powered contact search and analytics dashboard*
 
 ## Features
 
@@ -124,13 +124,19 @@ The app will be available at:
 ### Importing Contacts
 
 1. Click "Import CSV" in the sidebar
-2. Select one of the provided CSV files:
-   - chat_states_1k.csv (1,000 contacts)
-   - chat_states_10k.csv (10,000 contacts)
-   - chat_states_1M.csv (1,000,000 contacts)
+2. Select a CSV file (use `test-sample.csv` for testing with analytics)
 3. Wait for import confirmation
 
-**Note**: Large imports (1M) may take 2-5 minutes depending on hardware.
+**CSV Format**: Include these columns for full analytics support:
+- `name` (required)
+- `company`
+- `role`
+- `email`
+- `notes`
+- `Industry` (for industry segmentation)
+- `Location` (for geographic analysis)
+
+**Note**: Large imports may take a few minutes depending on file size.
 
 ## Usage Examples
 
@@ -150,18 +156,69 @@ Type natural language queries in the chat:
 The AI will search your contacts and provide relevant answers.
 
 ### Analytics & Campaign Insights
-Click the "📊 Analytics" button to view:
-- Demographic segmentation by industry, location, and role
-- Contact distribution patterns
-- Key insights about your network
-- Recommended targeted campaigns with strategies
-- Sample contacts for each campaign segment
 
-The analytics engine automatically identifies:
-- Industry concentrations
-- Geographic clusters
-- Seniority distribution
-- Campaign opportunities based on segments
+**Access**: Click the "📊 Analytics" button in the sidebar (next to Import CSV)
+
+The analytics dashboard provides:
+
+#### Demographic Segmentation
+- **By Industry**: Distribution across AI Infrastructure, Fintech, Cloud Computing, etc.
+- **By Location**: Geographic clustering (San Francisco, Seattle, New York, etc.)
+- **By Role**: Seniority analysis (CTOs, VPs, Managers, Engineers)
+- **By Company**: Top companies in your network
+
+#### Visual Insights
+- Interactive bar charts showing percentages
+- Summary statistics cards
+- Pattern recognition across segments
+
+#### Key Insights
+Automatically generated recommendations such as:
+- "AI Infrastructure represents 30% of your contacts - consider doubling down on AI expertise"
+- "Top 3 locations: San Francisco (24%), Seattle (16%), New York (12%) - host regional events"
+- "35% of contacts hold senior positions - focus on strategic partnerships"
+
+#### Campaign Recommendations
+Targeted campaign strategies including:
+
+**Industry-Specific Campaigns**
+- Campaign name and target segment
+- Number of contacts to reach
+- Tailored strategy (e.g., "Focus on scalability, performance benchmarks, cost optimization")
+- Sample contacts from the segment
+
+**Location-Based Campaigns**
+- Regional event recommendations
+- Local networking opportunities
+- Geographic targeting strategies
+
+**Role-Based Campaigns**
+- Executive leadership outreach
+- Technical specialist engagement
+- Manager-level initiatives
+
+**Example Campaign Output:**
+```
+Campaign: AI Infrastructure Outreach Campaign
+Segment: AI Infrastructure
+Target: 15 contacts
+Strategy: Focus on scalability, performance benchmarks, and cost 
+          optimization. Share case studies on AI workload management.
+Sample Contacts:
+  → John Doe - CTO at Acme Corp
+  → Mike Johnson - Research Scientist at OpenAI
+  → Sarah Chen - VP Engineering at Stripe
+```
+
+#### How to Use Analytics
+1. Import contacts with Industry and Location attributes (use test-sample.csv)
+2. Click "📊 Analytics" button
+3. Review demographic segments and patterns
+4. Read key insights for strategic recommendations
+5. Select campaigns to execute
+6. Customize messaging based on provided strategies
+
+For detailed analytics documentation, see [Analytics Guide](docs/ANALYTICS_GUIDE.md)
 
 ## Design Questions
 
@@ -292,34 +349,76 @@ The analytics engine automatically identifies:
 
 ```
 ├── server/
-│   ├── index.js           # Express server
+│   ├── index.js              # Express server
 │   ├── models/
-│   │   └── Contact.js     # Mongoose model
+│   │   └── Contact.js        # Mongoose model
 │   └── routes/
-│       ├── contacts.js    # Contact CRUD + import
-│       └── chat.js        # AI integration
+│       ├── contacts.js       # Contact CRUD + import
+│       ├── chat.js           # AI integration
+│       └── analytics.js      # Analytics & segmentation
 ├── client/
 │   ├── public/
 │   ├── src/
-│   │   ├── App.js         # Main React component
-│   │   ├── index.js       # React entry point
-│   │   └── index.css      # Styles
+│   │   ├── App.js            # Main React component with analytics
+│   │   ├── index.js          # React entry point
+│   │   └── index.css         # Styles (includes analytics UI)
 │   └── package.json
+├── docs/
+│   ├── screenshots/          # Application screenshots
+│   ├── ANALYTICS_GUIDE.md    # Comprehensive analytics documentation
+│   └── ANALYTICS_SUMMARY.md  # Feature summary
+├── test-sample.csv           # Sample data with Industry/Location
 ├── package.json
 ├── .env.example
 └── README.md
 ```
 
-## Time Spent
+## Analytics Feature Details
 
-- Architecture planning: 1 hour
-- Backend implementation: 2.5 hours
-- Frontend implementation: 2 hours
-- AI integration: 1.5 hours
-- Testing and refinement: 1 hour
-- Documentation: 1 hour
+### What It Analyzes
 
-**Total: ~9 hours**
+The analytics engine processes your contact data to identify:
+
+1. **Industry Patterns**: Which industries dominate your network
+2. **Geographic Distribution**: Where your contacts are located
+3. **Role Distribution**: Seniority levels and job functions
+4. **Company Diversity**: How spread out your network is
+
+### Insights Generated
+
+- **Industry Concentration**: Identifies if you're specialized or diversified
+- **Geographic Clusters**: Highlights opportunities for regional events
+- **Seniority Analysis**: Shows your access to decision-makers
+- **Network Health**: Assesses overall network composition
+
+### Campaign Strategies by Industry
+
+The system provides tailored strategies for each industry:
+
+- **AI Infrastructure**: Scalability, performance, cost optimization
+- **Fintech**: Security, compliance, transaction speed
+- **Cloud Computing**: Multi-cloud strategies, automation
+- **E-commerce**: Conversion optimization, personalization
+- **Social Media**: User engagement, content moderation
+- **And more...**
+
+### API Access
+
+You can also access analytics programmatically:
+
+```bash
+# Get demographic segments
+curl http://localhost:5000/api/analytics/segments
+
+# Get campaign recommendations
+curl http://localhost:5000/api/analytics/campaigns
+```
+
+## Documentation
+
+- **[Analytics Guide](docs/ANALYTICS_GUIDE.md)**: Comprehensive usage guide
+- **[Analytics Summary](docs/ANALYTICS_SUMMARY.md)**: Technical implementation details
+- **[Test Guide](test-analytics.md)**: Step-by-step testing instructions
 
 ## Future Enhancements
 
