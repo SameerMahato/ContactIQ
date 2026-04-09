@@ -8,6 +8,7 @@ function App() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     loadContacts();
@@ -86,6 +87,17 @@ function App() {
     }
   };
 
+  const filteredContacts = contacts.filter(contact => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      contact.name?.toLowerCase().includes(query) ||
+      contact.company?.toLowerCase().includes(query) ||
+      contact.role?.toLowerCase().includes(query) ||
+      contact.email?.toLowerCase().includes(query)
+    );
+  });
+
   return (
     <div className="app">
       <div className="sidebar">
@@ -108,8 +120,17 @@ function App() {
           </div>
           {importing && <div className="loading">Importing...</div>}
         </div>
+        <div className="search-box">
+          <input
+            type="text"
+            placeholder="Search contacts..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="search-input"
+          />
+        </div>
         <div className="contacts-list">
-          {contacts.map(contact => (
+          {filteredContacts.map(contact => (
             <div
               key={contact._id}
               className={`contact-item ${selectedContact?._id === contact._id ? 'active' : ''}`}
