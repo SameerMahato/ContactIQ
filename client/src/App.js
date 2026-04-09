@@ -52,11 +52,16 @@ function App() {
 
     try {
       const res = await axios.post('/api/contacts/import', formData);
-      alert(res.data.message);
-      loadContacts();
+      alert(res.data.message + '\n\nContacts will appear shortly. The page will refresh automatically.');
+      
+      // Auto-refresh contacts after a short delay
+      setTimeout(() => {
+        loadContacts();
+        setImporting(false);
+      }, 2000);
+      
     } catch (error) {
       alert('Import failed: ' + error.message);
-    } finally {
       setImporting(false);
     }
   };
@@ -140,7 +145,7 @@ function App() {
               />
             </label>
           </div>
-          {importing && <div className="loading">Importing...</div>}
+          {importing && <div className="loading">Importing... Contacts will appear shortly.</div>}
         </div>
         <div className="search-box">
           <input

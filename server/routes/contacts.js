@@ -7,6 +7,17 @@ const Contact = require('../models/Contact');
 
 const upload = multer({ dest: 'uploads/' });
 
+// Store import status
+const importStatus = {
+  inProgress: false,
+  count: 0,
+  total: 0
+};
+
+router.get('/import-status', (req, res) => {
+  res.json(importStatus);
+});
+
 router.get('/', async (req, res) => {
   try {
     const { page = 1, limit = 50, search } = req.query;
@@ -53,32 +64,69 @@ router.post('/', async (req, res) => {
 router.post('/import', upload.single('file'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
   
-  const results = [];
-  let count = 0;
-  const batchSize = 1000;
+  const filePath = req.file.path;
   
-  fs.createReadStream(req.file.path)
+  // Reset status
+  importStatus.inProgress = true;
+  importStatus.count = 0;
+  importStatus.total = 0;
+  
+  // Respond immediately to avoid timeout
+  res.json({ message: 'Import started. Processing in background...', status: 'started' });
+  
+  // Process in background
+  const results = [];
+  const batchSize = 500; // Reduced for faster processing
+  
+  fs.createReadStream(filePath)
     .pipe(csv())
     .on('data', (data) => {
       const { name, company, role, email, notes, ...attributes } = data;
-      results.push({ name, company, role, email, notes, attributes });
+      if (name) { // Only add if name exists
+        results.push({ name, company, role, email, notes, attributes });
+        importStatus.total++;
+      }
       
+      // Insert batch when it reaches batchSize
       if (results.length >= batchSize) {
-        Contact.insertMany(results.splice(0, batchSize), { ordered: false })
+        const batch = results.splice(0, batchSize);
+        Contact.insertMany(batch, { ordered: false })
+          .then(() => {
+            importStatus.count += batch.length;
+            console.log(`Inserted batch: ${importStatus.count}/${importStatus.total}`);
+          })
           .catch(err => console.error('Batch insert error:', err));
       }
-      count++;
     })
     .on('end', async () => {
+      // Insert remaining contacts
       if (results.length > 0) {
-        await Contact.insertMany(results, { ordered: false }).catch(err => console.error(err));
+        await Contact.insertMany(results, { ordered: false })
+          .then(() => {
+            importStatus.count += results.length;
+            console.log(`Inserted final batch: ${importStatus.count}/${importStatus.total}`);
+          })
+          .catch(err => console.error('Final batch error:', err));
       }
-      fs.unlinkSync(req.file.path);
-      res.json({ message: `Imported ${count} contacts` });
+      
+      // Clean up file
+      try {
+        fs.unlinkSync(filePath);
+      } catch (err) {
+        console.error('Error deleting file:', err);
+      }
+      
+      console.log(`✓ Import completed: ${importStatus.total} contacts imported`);
+      importStatus.inProgress = false;
     })
     .on('error', (error) => {
-      fs.unlinkSync(req.file.path);
-      res.status(500).json({ error: error.message });
+      console.error('Import error:', error);
+      importStatus.inProgress = false;
+      try {
+        fs.unlinkSync(filePath);
+      } catch (err) {
+        console.error('Error deleting file:', err);
+      }
     });
 });
 
