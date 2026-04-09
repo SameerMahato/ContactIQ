@@ -83,7 +83,16 @@ router.post('/import', upload.single('file'), async (req, res) => {
     .on('data', (data) => {
       const { name, company, role, email, notes, ...attributes } = data;
       if (name) { // Only add if name exists
-        results.push({ name, company, role, email, notes, attributes });
+        // Convert attributes object to Map for MongoDB
+        const attributesMap = new Map(Object.entries(attributes));
+        results.push({ 
+          name: name.trim(), 
+          company: company?.trim(), 
+          role: role?.trim(), 
+          email: email?.trim(), 
+          notes: notes?.trim(), 
+          attributes: attributesMap 
+        });
         importStatus.total++;
       }
       
@@ -137,6 +146,16 @@ router.post('/search', async (req, res) => {
       .limit(10)
       .select('-__v');
     res.json(contacts);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Clear all contacts (for testing/debugging)
+router.delete('/clear-all', async (req, res) => {
+  try {
+    const result = await Contact.deleteMany({});
+    res.json({ message: `Deleted ${result.deletedCount} contacts` });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
